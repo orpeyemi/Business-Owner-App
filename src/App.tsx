@@ -30,7 +30,10 @@ import {
   GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged, 
-  User 
+  User,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import { 
   collection, 
@@ -233,6 +236,13 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ai' | 'reminders' | 'notes'>('dashboard');
   
+  // Manual Auth State
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  
   // Data States
   const [posts, setPosts] = useState<PostSuggestion[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -291,6 +301,26 @@ function AppContent() {
   };
 
   const handleLogout = () => signOut(auth);
+
+  const handleManualAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    try {
+      if (isSignUp) {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName });
+        toast.success('Account created successfully!');
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast.success('Logged in successfully!');
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || 'Authentication failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   const generateAIContent = async () => {
     if (!aiInput.trim()) return;
@@ -384,26 +414,99 @@ function AppContent() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="z-10 text-center max-w-2xl"
+          className="z-10 w-full max-w-md"
         >
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-8">
-            <Sparkles className="w-4 h-4 mr-2" />
-            AI-Powered Social Growth for SMBs
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm font-medium mb-4">
+              <Sparkles className="w-4 h-4 mr-2" />
+              AI-Powered Social Growth for SMBs
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+              SMB AI Content Hub
+            </h1>
+            <p className="text-slate-400">
+              {isSignUp ? 'Create your account to get started' : 'Sign in to manage your content'}
+            </p>
           </div>
-          <h1 className="text-6xl md:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
-            SMB AI Content Hub
-          </h1>
-          <p className="text-xl text-slate-400 mb-10 leading-relaxed">
-            Generate viral content, schedule reminders, and manage your business resources in one intelligent dashboard.
-          </p>
-          <Button 
-            size="lg" 
-            onClick={handleLogin}
-            className="bg-white text-slate-950 hover:bg-slate-100 px-8 py-4 text-lg font-semibold rounded-2xl shadow-xl shadow-indigo-500/10"
-          >
-            Get Started with Google
-            <ChevronRight className="w-5 h-5 ml-2" />
-          </Button>
+
+          <Card className="p-8 bg-slate-900/50 border-slate-800 backdrop-blur-xl">
+            <form onSubmit={handleManualAuth} className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-white" 
+                    placeholder="John Doe"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-white" 
+                  placeholder="name@company.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-white" 
+                  placeholder="••••••••"
+                />
+              </div>
+              <Button 
+                type="submit" 
+                disabled={authLoading}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {authLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : (
+                  isSignUp ? 'Create Account' : 'Sign In'
+                )}
+              </Button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-800"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-slate-900 px-2 text-slate-500">Or continue with</span>
+              </div>
+            </div>
+
+            <Button 
+              onClick={handleLogin}
+              variant="secondary"
+              className="w-full py-3 bg-white text-slate-950 hover:bg-slate-100 border-none"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 mr-2" alt="Google" />
+              Google
+            </Button>
+
+            <p className="mt-6 text-center text-sm text-slate-400">
+              {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+              <button 
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-indigo-400 font-semibold hover:text-indigo-300"
+              >
+                {isSignUp ? 'Sign In' : 'Sign Up'}
+              </button>
+            </p>
+          </Card>
         </motion.div>
       </div>
     );
