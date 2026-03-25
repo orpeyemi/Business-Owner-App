@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "PostSuggestion": {
+      "title": "Post Suggestion",
+      "description": "AI-generated content suggestions for social media.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User ID of the creator" },
+        "content": { "type": "string", "description": "The suggested post text" },
+        "platform": { "type": "string", "description": "Target social media platform (e.g., Instagram, Twitter)" },
+        "trend": { "type": "string", "description": "The trend this post is based on" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["uid", "content", "platform", "createdAt"]
+    },
+    "Reminder": {
+      "title": "Post Reminder",
+      "description": "Scheduled reminders for social media posts.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User ID of the owner" },
+        "title": { "type": "string", "description": "Title of the reminder" },
+        "postContent": { "type": "string", "description": "Content to be posted" },
+        "scheduledTime": { "type": "string", "format": "date-time", "description": "When to post" },
+        "status": { "type": "string", "enum": ["pending", "completed"], "description": "Status of the reminder" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["uid", "title", "scheduledTime", "status", "createdAt"]
+    },
+    "Note": {
+      "title": "Business Note",
+      "description": "General notes and resources for the business.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "User ID of the owner" },
+        "title": { "type": "string", "description": "Title of the note" },
+        "content": { "type": "string", "description": "Content of the note" },
+        "category": { "type": "string", "description": "Category for organization" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["uid", "title", "content", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/posts": { "schema": "PostSuggestion", "description": "Collection of AI post suggestions" },
+    "/reminders": { "schema": "Reminder", "description": "Collection of post reminders" },
+    "/notes": { "schema": "Note", "description": "Collection of business notes" }
+  }
+}
