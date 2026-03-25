@@ -21,7 +21,9 @@ import {
   Calendar as CalendarIcon,
   Search,
   MoreVertical,
-  ExternalLink
+  ExternalLink,
+  Menu,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI } from "@google/genai";
@@ -235,6 +237,7 @@ function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ai' | 'reminders' | 'notes'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Manual Auth State
   const [isSignUp, setIsSignUp] = useState(false);
@@ -513,17 +516,57 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
       <Toaster position="top-right" />
       
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40">
+        <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <span>ContentHub</span>
+        </div>
+        <button 
+          onClick={() => setIsSidebarOpen(true)}
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Sidebar Backdrop */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+      
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col sticky top-0 h-screen">
-        <div className="p-6">
-          <div className="flex items-center gap-3 text-indigo-600 font-bold text-xl mb-8">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
-              <Sparkles className="w-6 h-6" />
+      <aside className={cn(
+        "fixed inset-y-0 left-0 w-72 bg-white border-r border-gray-200 flex flex-col z-50 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:w-64 lg:h-screen lg:sticky lg:top-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-6 flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3 text-indigo-600 font-bold text-xl">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <span>ContentHub</span>
             </div>
-            <span>ContentHub</span>
+            <button 
+              onClick={() => setIsSidebarOpen(false)}
+              className="lg:hidden p-2 text-gray-400 hover:bg-gray-100 rounded-lg"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
           
           <nav className="space-y-1">
@@ -535,7 +578,10 @@ function AppContent() {
             ].map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
+                onClick={() => {
+                  setActiveTab(item.id as any);
+                  setIsSidebarOpen(false);
+                }}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   activeTab === item.id 
@@ -548,47 +594,47 @@ function AppContent() {
               </button>
             ))}
           </nav>
-        </div>
-        
-        <div className="mt-auto p-6 border-t border-gray-100">
-          <div className="flex items-center gap-3 mb-4">
-            <img 
-              src={user.photoURL || ''} 
-              alt={user.displayName || ''} 
-              className="w-10 h-10 rounded-full border border-gray-200"
-              referrerPolicy="no-referrer"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user.displayName}</p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+
+          <div className="mt-auto pt-6 border-t border-gray-100">
+            <div className="flex items-center gap-3 mb-4">
+              <img 
+                src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=6366f1&color=fff`} 
+                alt={user.displayName || ''} 
+                className="w-10 h-10 rounded-full border border-gray-200"
+                referrerPolicy="no-referrer"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{user.displayName}</p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              </div>
             </div>
+            <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        <header className="mb-8 flex justify-between items-end">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto w-full max-w-full">
+        <header className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 capitalize">{activeTab}</h2>
-            <p className="text-gray-500 mt-1">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 capitalize">{activeTab}</h2>
+            <p className="text-sm md:text-base text-gray-500 mt-1">
               {activeTab === 'dashboard' && "Welcome back! Here's what's happening today."}
               {activeTab === 'ai' && "Generate fresh ideas for your social media."}
               {activeTab === 'reminders' && "Never miss a post with scheduled reminders."}
               {activeTab === 'notes' && "Keep your business resources organized."}
             </p>
           </div>
-          <div className="flex gap-3">
-            <div className="relative">
+          <div className="flex gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input 
                 type="text" 
                 placeholder="Search..." 
-                className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
             </div>
           </div>
@@ -676,21 +722,21 @@ function AppContent() {
               exit={{ opacity: 0, y: -10 }}
               className="max-w-4xl mx-auto"
             >
-              <Card className="p-8 mb-8">
-                <h3 className="text-xl font-bold mb-4">What's your business focus today?</h3>
-                <div className="flex gap-4">
+              <Card className="p-6 md:p-8 mb-8">
+                <h3 className="text-lg md:text-xl font-bold mb-4">What's your business focus today?</h3>
+                <div className="flex flex-col sm:flex-row gap-4">
                   <input 
                     type="text" 
                     value={aiInput}
                     onChange={(e) => setAiInput(e.target.value)}
-                    placeholder="e.g., New summer collection, Coffee shop morning vibes, Tech consulting tips..."
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    placeholder="e.g., New summer collection, Coffee shop morning vibes..."
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm md:text-base"
                   />
                   <Button 
                     size="lg" 
                     onClick={generateAIContent} 
                     disabled={isGenerating || !aiInput.trim()}
-                    className="gap-2"
+                    className="gap-2 w-full sm:w-auto"
                   >
                     {isGenerating ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -707,18 +753,20 @@ function AppContent() {
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                 >
-                  <Card className="p-8 prose prose-indigo max-w-none">
-                    <div className="flex justify-between items-center mb-6 not-prose">
+                  <Card className="p-6 md:p-8 prose prose-indigo max-w-none">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 not-prose gap-4">
                       <h4 className="text-lg font-bold text-indigo-600">AI Suggested Content</h4>
                       <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" onClick={() => {
+                        <Button variant="secondary" size="sm" className="flex-1 sm:flex-none" onClick={() => {
                           navigator.clipboard.writeText(generatedContent);
                           toast.success('Copied to clipboard');
                         }}>Copy All</Button>
-                        <Button size="sm" onClick={() => setActiveTab('reminders')}>Schedule Post</Button>
+                        <Button size="sm" className="flex-1 sm:flex-none" onClick={() => setActiveTab('reminders')}>Schedule</Button>
                       </div>
                     </div>
-                    <Markdown>{generatedContent}</Markdown>
+                    <div className="text-sm md:text-base">
+                      <Markdown>{generatedContent}</Markdown>
+                    </div>
                   </Card>
                 </motion.div>
               )}
@@ -731,10 +779,10 @@ function AppContent() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+              className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8"
             >
               <div className="lg:col-span-1">
-                <Card className="p-6 sticky top-8">
+                <Card className="p-6 lg:sticky lg:top-8">
                   <h3 className="font-bold text-lg mb-6">New Reminder</h3>
                   <form className="space-y-4" onSubmit={(e) => {
                     e.preventDefault();
@@ -744,15 +792,15 @@ function AppContent() {
                   }}>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
-                      <input name="title" required type="text" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                      <input name="title" required type="text" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Schedule Time</label>
-                      <input name="time" required type="datetime-local" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+                      <input name="time" required type="datetime-local" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Post Content</label>
-                      <textarea name="content" rows={4} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none" />
+                      <textarea name="content" rows={4} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none text-sm" />
                     </div>
                     <Button type="submit" className="w-full">Set Reminder</Button>
                   </form>
@@ -761,47 +809,47 @@ function AppContent() {
 
               <div className="lg:col-span-2 space-y-4">
                 {reminders.map((reminder) => (
-                  <Card key={reminder.id} className={cn("p-6 transition-all", reminder.status === 'completed' && "opacity-60")}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
+                  <Card key={reminder.id} className={cn("p-4 md:p-6 transition-all", reminder.status === 'completed' && "opacity-60")}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex gap-3 md:gap-4">
                         <button 
                           onClick={() => toggleReminder(reminder.id, reminder.status)}
                           className={cn(
-                            "mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                            "mt-1 w-5 h-5 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
                             reminder.status === 'completed' ? "bg-green-500 border-green-500 text-white" : "border-gray-200 text-transparent hover:border-indigo-500"
                           )}
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
-                        <div>
-                          <h4 className={cn("font-bold text-lg", reminder.status === 'completed' && "line-through")}>{reminder.title}</h4>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                        <div className="min-w-0">
+                          <h4 className={cn("font-bold text-base md:text-lg truncate", reminder.status === 'completed' && "line-through")}>{reminder.title}</h4>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs md:text-sm text-gray-500">
                             <span className="flex items-center gap-1">
-                              <CalendarIcon className="w-4 h-4" />
-                              {format(new Date(reminder.scheduledTime), 'PPP p')}
+                              <CalendarIcon className="w-3 h-3 md:w-4 md:h-4" />
+                              {format(new Date(reminder.scheduledTime), 'MMM d, p')}
                             </span>
                             {isAfter(new Date(), parseISO(reminder.scheduledTime)) && reminder.status === 'pending' && (
                               <span className="text-red-500 font-medium flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
+                                <Clock className="w-3 h-3 md:w-4 md:h-4" />
                                 Overdue
                               </span>
                             )}
                           </div>
                           {reminder.postContent && (
-                            <p className="mt-4 text-gray-600 bg-gray-50 p-4 rounded-xl text-sm border border-gray-100 italic">
+                            <p className="mt-4 text-gray-600 bg-gray-50 p-3 md:p-4 rounded-xl text-xs md:text-sm border border-gray-100 italic line-clamp-4">
                               "{reminder.postContent}"
                             </p>
                           )}
                         </div>
                       </div>
-                      <button onClick={() => deleteItem('reminders', reminder.id)} className="p-2 text-gray-400 hover:text-red-600 transition-colors">
+                      <button onClick={() => deleteItem('reminders', reminder.id)} className="p-2 text-gray-400 hover:text-red-600 transition-colors shrink-0">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </Card>
                 ))}
                 {reminders.length === 0 && (
-                  <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400">
+                  <div className="text-center py-12 md:py-20 bg-white rounded-2xl border border-dashed border-gray-200 text-gray-400">
                     No reminders yet. Plan your first post!
                   </div>
                 )}
